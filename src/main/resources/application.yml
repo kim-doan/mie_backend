@@ -1,0 +1,11 @@
+spring:
+  messages:
+    basename: i18n/exception
+    encoding: UTF-8
+    
+cloud:
+  aws:
+    s3:
+      bucket: miefileserver
+    region:
+      static: ap-northeast-2

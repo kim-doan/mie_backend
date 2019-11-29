@@ -27,13 +27,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.mie.main.security.exception.CUserNotFoundException;
 import com.mie.main.member.model.ApiResponseMessage;
 import com.mie.main.member.model.AuthenticationRequest;
 import com.mie.main.member.model.AuthenticationToken;
 import com.mie.main.member.model.CommonResult;
+import com.mie.main.member.model.ListResult;
 import com.mie.main.member.model.Member;
 import com.mie.main.member.model.SingleResult;
 import com.mie.main.member.service.ResponseService;
@@ -43,6 +46,8 @@ import com.mie.main.security.JwtTokenProvider;
 
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 @RestController
 @RequestMapping("/api")
@@ -50,6 +55,7 @@ public class MemberController {
 	
 	@Autowired
 	MemberRepository memberRepository;
+	
 	@Autowired 
 	AuthenticationManager authenticationManager;
 	
@@ -63,7 +69,7 @@ public class MemberController {
 	private JwtTokenProvider jwtTokenProvider;
 	boolean iderror = false;
 	
-	// Get All Member
+	// 모든 회원 조회
 	@CrossOrigin
 	@ApiImplicitParams({
 		@ApiImplicitParam(name = "X-AUTH-TOKEN", value = "로인 성공 후 access_token", required = true, dataType = "String", paramType = "header")
@@ -73,10 +79,28 @@ public class MemberController {
 		return memberRepository.findAll();
 	}
 	
-	// Create a new Member
+	//회원 단건 조회
+	@CrossOrigin
+	@GetMapping("members/{id}")
+	public SingleResult<Member> getMemberById(@PathVariable(value = "id") Long memberId) {
+		return responseService.getSingleResult(memberRepository.findById(memberId).orElseThrow(CUserNotFoundException::new));
+	}
+	
+	//회원 삭제
+	@DeleteMapping("members/{id}")
+	@CrossOrigin
+	public ResponseEntity<ApiResponseMessage> deleteMember(@PathVariable(value = "id") Long memberId){
+		Member member = memberRepository.findById(memberId).orElseThrow(() -> new ResourceNotFoundException("Member", "id", memberId));
+		
+		memberRepository.delete(member);
+		ApiResponseMessage message = new ApiResponseMessage("Success", "삭제 완료", "", "", "");
+		return new ResponseEntity<ApiResponseMessage>(message, HttpStatus.OK);
+	}
+	
+	// 회원가입
 	@CrossOrigin
 	@PostMapping("members/register")
-	public ResponseEntity<ApiResponseMessage> reateMember(@Valid @RequestBody Member member) {
+	public ResponseEntity<ApiResponseMessage> createMember(@Valid @RequestBody Member member) {
 		List<Member> allmember = memberRepository.findAll();
 		for(int i=0;i<allmember.size();i++) {
 			if(allmember.get(i).getUsername().equals(member.getUsername())) {
@@ -104,7 +128,7 @@ public class MemberController {
 		}
 		return null;
 	}
-	// login
+	// 로그인
 	@CrossOrigin
 	@PostMapping("members/login")
 	public ResponseEntity<ApiResponseMessage> login(@Valid @RequestBody AuthenticationRequest member) throws Exception {
@@ -120,44 +144,36 @@ public class MemberController {
 		}
 	}
 	
-	//profile
+	// 유저정보 불러오기
 	@CrossOrigin
 	@GetMapping("members/profile/{username}")
 	public Member getMemberByUsername(@PathVariable(value = "username") String memberUsername) {
 		return memberRepository.findByusername(memberUsername);
 	}
 	
-	//Get a Single Member
-	@CrossOrigin
-	@GetMapping("members/{id}")
-	public Member getMemberById(@PathVariable(value = "id") Long memberId) {
-		return memberRepository.findById(memberId).orElseThrow(() -> new ResourceNotFoundException("Member", "id", memberId));
-	}
-
-	// Update a Member
-	@PutMapping("/members/{id}")
-	@CrossOrigin
-	public Member updateMember(@PathVariable(value = "id") Long memberId, @Valid @RequestBody Member memberDetails) {
-		Member member = memberRepository.findById(memberId).orElseThrow(() -> new ResourceNotFoundException("Member", "id", memberId));
-		member.setUsername(memberDetails.getUsername());
-		member.setPassword(memberDetails.getPassword());
-		member.setEmail(memberDetails.getEmail());
-		member.setName(memberDetails.getName());
-		member.setPhone(memberDetails.getPhone());
-		member.setType(memberDetails.getType());
-		
-		Member updateMember = memberRepository.save(member);
-		
-		return updateMember;
-	}
-	
-	//Delete a Member
-	@DeleteMapping("/members/{id}")
-	@CrossOrigin
-	public ResponseEntity<?> deleteMember(@PathVariable(value = "id") Long memberId){
-		Member member = memberRepository.findById(memberId).orElseThrow(() -> new ResourceNotFoundException("Member", "id", memberId));
-		
-		memberRepository.delete(member);
-		return ResponseEntity.ok().build();
-	}
+	// 회원 정보 수정 ( 관리자 모드 ) 비밀번호 필요없음
+	  @ApiImplicitParams({
+          @ApiImplicitParam(name = "X-AUTH-TOKEN", value = "로그인 성공 후 access_token", required = true, dataType = "String", paramType = "header")
+	  })
+	  @ApiOperation(value = "회원 수정", notes = "회원정보를 수정한다")
+	  @PutMapping(value = "members/update")
+	  @CrossOrigin
+	  public SingleResult<Member> modify(
+	          @ApiParam(value = "회원번호", required = true) @Valid @RequestBody Member member) {
+		  
+		  //회원 비밀번호 없이 수정하기 위해 현재 db 정보 불러오기
+		  Member dbMember = memberRepository.findById(member.getId()).orElseThrow(CUserNotFoundException::new);
+		  
+	      Member vomember = Member.builder()
+	              .id(member.getId())
+	              .username(member.getUsername())
+	              .password(dbMember.getPassword()) // 기존 db에 저장된 정보를 조회후 넣음
+	              .email(member.getEmail())
+	              .name(member.getName())
+	              .phone(member.getPhone())
+	              .type(member.getType())
+	              .roles(member.getRoles()) // 권한 업데이트
+	              .build();
+	      return responseService.getSingleResult(memberRepository.save(vomember));
+	  }
 }

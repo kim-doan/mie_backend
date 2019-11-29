@@ -13,6 +13,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
@@ -24,6 +25,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mie.main.date.CommonDateEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,11 +38,12 @@ import lombok.Setter;
 @Entity
 @Table(name = "MEMBER")
 @EntityListeners(AuditingEntityListener.class)
-@JsonIgnoreProperties(value = {"createAt", "updateAt"}, allowGetters = true)
+//@JsonIgnoreProperties(value = {"createAt", "updateAt"}, allowGetters = true)
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter @Setter
-public class Member implements Serializable, UserDetails {
+public class Member extends CommonDateEntity implements Serializable, UserDetails {
 	@Id
 	@GeneratedValue(strategy=GenerationType.SEQUENCE, generator = "members_seq")
 	@SequenceGenerator(sequenceName = "SEQUENCE_MEMBER", allocationSize = 1, name="members_seq")
@@ -49,19 +52,14 @@ public class Member implements Serializable, UserDetails {
 	@NotBlank
 	private String username;
 	
-	@NotBlank
 	private String password;
 	
-	@NotBlank
 	private String email;
 	
-	@NotBlank
 	private String name;
 	
-	@NotBlank
 	private String phone;
 	
-	@NotBlank
 	private String type;
 	
 	@ElementCollection(fetch = FetchType.EAGER)
@@ -95,5 +93,11 @@ public class Member implements Serializable, UserDetails {
 	@Override
 	public boolean isEnabled() {
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Member [id=" + id + ", username=" + username + ", password=" + password + ", email=" + email + ", name="
+				+ name + ", phone=" + phone + ", type=" + type + ", roles=" + roles + "]";
 	}
 }
