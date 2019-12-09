@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mie.main.aws.S3Uploader;
 import com.mie.main.board.model.Board;
 import com.mie.main.board.model.ParamsPost;
 import com.mie.main.board.model.Post;
@@ -36,6 +37,7 @@ public class BoardController {
 	
 	private final BoardService boardService;
 	private final ResponseService responseService;
+	private final S3Uploader s3Uploader;
 	
 	//게시판 정보 조회
 	@CrossOrigin
@@ -86,13 +88,22 @@ public class BoardController {
 	public ListResult<Post> posts(@PathVariable Long boardId) {
 		return responseService.getListResult(boardService.findPostsById(boardId));
 	}
-	//게시글 작성
+	//게시글 작성 - 게시판 이름
 	@CrossOrigin
 	@PostMapping(value = "/add/{boardName}")
 	public SingleResult<Post> post(@PathVariable String boardName, @Valid @RequestBody ParamsPost post) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		String userName = authentication.getName();
 		return responseService.getSingleResult(boardService.writePost(userName, boardName, post));
+	}
+	
+	//게시글 작성 - 게시판 번호
+	@CrossOrigin
+	@PostMapping(value = "/add/id/{boardId}")
+	public SingleResult<Post> post2(@PathVariable Long boardId, @Valid @RequestBody ParamsPost post) {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String userName = authentication.getName();
+		return responseService.getSingleResult(boardService.writePost(userName, boardId, post));
 	}
 	
 	//게시글 상세보기
@@ -118,6 +129,8 @@ public class BoardController {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		String userName = authentication.getName();
 		boardService.deletePost(postId, userName);
+		String dirName = "" + postId;
+		s3Uploader.removeFolder(dirName);
 		return responseService.getSuccessResult();
 	}
 }

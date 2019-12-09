@@ -86,6 +86,13 @@ public class BoardService {
 				paramsPost.getTitle(), paramsPost.getContent());
 		return postRepository.save(post);
 	}
+	//게시물 등록 -- boardId
+	public Post writePost(String userName, Long boardId, ParamsPost paramsPost) {
+		Board board = findBoard(boardId);
+		Post post = new Post(memberRepository.findByusername(userName), board, paramsPost.getAuthor(),
+				paramsPost.getTitle(), paramsPost.getContent());
+		return postRepository.save(post);
+	}
 	// 게시물 수정
 	public Post updatePost(long postId, String userName, ParamsPost paramsPost) {
 		Post post = getPost(postId);
