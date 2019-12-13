@@ -78,6 +78,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter{
 				.antMatchers("/api/aws/**").permitAll()
 				.antMatchers("/aws/board/upload/**").permitAll()
 				.antMatchers("/aws/board/file/**").permitAll()
+				.antMatchers("/api/labmember/**").permitAll()
+				.antMatchers("/api/labmember/info/**").permitAll()
+				.antMatchers("/api/labmember/add").hasRole("ADMIN")
+				.antMatchers("/api/labmember/profile/add").hasRole("ADMIN")
+				.antMatchers("/api/labmember/delete/**").hasRole("ADMIN")
+				.antMatchers("/api/labmember/update").hasRole("ADMIN")
+				.antMatchers("/api/labmember/activities/add/**").hasRole("ADMIN")
 				.anyRequest().hasRole("USER")
 			.and()
 				.exceptionHandling().accessDeniedHandler(new CustomAccessDeniedHandler()) // 토큰 권한이 낮을 경우

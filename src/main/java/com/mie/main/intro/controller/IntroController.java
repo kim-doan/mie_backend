@@ -195,7 +195,7 @@ public class IntroController {
 			return responseService.getSingleResult(customProfessorRepository.findById(langId).orElseThrow(CUserNotFoundException::new));
 		}
 		
-		// 교수님 프로필 저장
+		// 교수님 프로필 수정
 		@CrossOrigin
 		@PutMapping("/intro/professor/update/{langid}")
 		public SingleResult<CustomProfessor> updateProfessor(@Valid @RequestBody CustomProfessor professor, @PathVariable(value = "langid") int langId) {
